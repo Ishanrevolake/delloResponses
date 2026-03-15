@@ -1,5 +1,5 @@
-import { Bell, Search, User, LogOut } from "lucide-react";
-import { logout } from "@/app/login/actions";
+import { Bell, Search, User } from "lucide-react";
+import { LogoutButton } from "./LogoutButton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -35,12 +35,7 @@ export default function Header() {
                 </form>
 
                 <div className="ml-auto flex items-center gap-2">
-                    <form action={logout}>
-                        <Button type="submit" variant="secondary" size="icon" className="rounded-full bg-muted border border-border/50 text-muted-foreground hover:text-red-400">
-                            <LogOut className="h-5 w-5" />
-                            <span className="sr-only">Logout</span>
-                        </Button>
-                    </form>
+                    <LogoutButton />
                 </div>
             </div>
         </header>
