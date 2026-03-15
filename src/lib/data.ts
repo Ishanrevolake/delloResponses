@@ -15,6 +15,7 @@ export const SUBMISSIONS: Submission[] = [
         name: `User ${i + 1}`,
         email: `contact${i + 1}@example.com`,
         message: `Hello! I have an inquiry regarding your services. I came across your website and wanted to learn more.`,
+        data: {},
         timestamp: subDays(new Date(), Math.floor(Math.random() * 30)).toISOString(),
     })).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 ];
