@@ -1,21 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { LogOut, Loader2 } from "lucide-react";
 import { logout } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
 
 export function LogoutButton() {
-    const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [isPending, startTransition] = useTransition();
 
-    const handleLogout = async (formData: FormData) => {
-        setIsLoggingOut(true);
-        try {
+    const handleLogout = () => {
+        startTransition(async () => {
             await logout();
-        } catch (error) {
-            console.error("Logout failed:", error);
-            setIsLoggingOut(false);
-        }
+        });
     };
 
     return (
@@ -24,10 +20,10 @@ export function LogoutButton() {
                 type="submit" 
                 variant="secondary" 
                 size="icon" 
-                disabled={isLoggingOut}
+                disabled={isPending}
                 className="rounded-full bg-muted border border-border/50 text-muted-foreground hover:text-red-400 transition-all active:scale-95"
             >
-                {isLoggingOut ? (
+                {isPending ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
                     <LogOut className="h-5 w-5" />
