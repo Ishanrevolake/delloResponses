@@ -87,7 +87,7 @@ export async function getUserDashboardData() {
                 websiteId: row.website_id,
                 name: rowData.fullName || rowData.name || 'Unknown',
                 email: rowData.email || 'Unknown',
-                message: rowData.message || (rowData.phone ? `Phone: ${rowData.phone}` : 'No message provided'),
+                message: rowData.message || 'No message provided',
                 data: rowData,
                 timestamp: row.created_at,
             }
