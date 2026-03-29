@@ -57,13 +57,15 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
         // Flatten the data for Excel - combine primary fields with 'data' object fields
         const exportData = filteredSubmissions.map(sub => {
             const website = websites.find(w => w.id === sub.websiteId);
+            const { website_id, Website_id, websiteId, form_id, Form_id, formId, ...cleanData } = sub.data || {};
+            
             return {
                 Name: sub.name,
                 Email: sub.email,
                 Message: sub.message,
                 Website: website ? website.name : 'Unknown',
                 Date: format(new Date(sub.timestamp), "MMM dd, yyyy HH:mm"),
-                ...sub.data
+                ...cleanData
             };
         });
 
@@ -96,8 +98,14 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
         submissions.forEach((sub) => {
             if (sub.data) {
                 Object.keys(sub.data).forEach((key) => {
-                    // Exclude keys that are already handled by primary columns
-                    if (!["name", "fullName", "email", "message"].includes(key)) {
+                    // Exclude keys that are already handled by primary columns and internal IDs
+                    const excludeList = [
+                        "name", "fullName", "email", "message", 
+                        "website_id", "Website_id", "websiteId", 
+                        "form_id", "Form_id", "formId"
+                    ];
+                    
+                    if (!excludeList.includes(key)) {
                         columns.add(key);
                     }
                 });
