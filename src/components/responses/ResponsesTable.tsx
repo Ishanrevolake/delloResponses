@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { Search, Download, Calendar as CalendarIcon, ChevronLeft, ChevronRight, RefreshCw, Mail, Send } from "lucide-react";
 import * as XLSX from "xlsx";
+import emailjs from '@emailjs/browser';
 
 import { Submission, Website } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
@@ -68,19 +69,43 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
         setIsMailDialogOpen(true);
     };
 
-    const handleSendMail = () => {
+    const handleSendMail = async () => {
+        if (!selectedSubmission) return;
+
+        const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
+        const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
+        const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
+
+        if (!serviceId || !templateId || !publicKey) {
+            alert("EmailJS configuration is missing. Please set the environment variables.");
+            return;
+        }
+
         setIsSending(true);
-        // Placeholder for EmailJS integration
-        console.log("Sending mail to:", selectedSubmission?.email);
-        console.log("Subject:", mailSubject);
-        console.log("Message:", mailMessage);
         
-        setTimeout(() => {
+        try {
+            const templateParams = {
+                to_name: selectedSubmission.name,
+                to_email: selectedSubmission.email,
+                subject: mailSubject,
+                message: mailMessage,
+            };
+
+            await emailjs.send(
+                serviceId,
+                templateId,
+                templateParams,
+                publicKey
+            );
+
             setIsSending(false);
             setIsMailDialogOpen(false);
-            // In a real app, we would show a success toast here
-            alert(`Mail sent to ${selectedSubmission?.email} (Simulation)`);
-        }, 1000);
+            alert(`Email sent successfully to ${selectedSubmission.email}`);
+        } catch (error) {
+            console.error("EmailJS Error:", error);
+            setIsSending(false);
+            alert("Failed to send email. Please check the console for details.");
+        }
     };
 
     const handleRefresh = () => {

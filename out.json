@@ -1,0 +1,17 @@
+{
+  "roleData": null,
+  "roleError": {
+    "code": "PGRST116",
+    "details": "The result contains 0 rows",
+    "hint": null,
+    "message": "Cannot coerce the result to a single JSON object"
+  },
+  "siteData": {
+    "id": "edb39be2-2f51-4853-9408-746e878457d9",
+    "name": "GraftGym",
+    "owner_id": "3e9182e2-a191-442f-989f-a00bf7cf2da7"
+  },
+  "siteError": null,
+  "hasAccess": true,
+  "reason": "Owner of site"
+}
