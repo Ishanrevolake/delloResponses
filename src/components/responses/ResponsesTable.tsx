@@ -130,27 +130,6 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
         }, {} as Record<string, Website>);
     }, [websites]);
 
-    const dynamicColumns = useMemo(() => {
-        const columns = new Set<string>();
-        submissions.forEach((sub) => {
-            if (sub.data) {
-                Object.keys(sub.data).forEach((key) => {
-                    // Exclude keys that are already handled by primary columns and internal IDs
-                    const excludeList = [
-                        "name", "fullName", "email", "message", 
-                        "website_id", "Website_id", "websiteId", 
-                        "form_id", "Form_id", "formId"
-                    ];
-                    
-                    if (!excludeList.includes(key)) {
-                        columns.add(key);
-                    }
-                });
-            }
-        });
-        return Array.from(columns);
-    }, [submissions]);
-
     const filteredSubmissions = useMemo(() => {
         return submissions.filter((sub) => {
             const searchLower = search.toLowerCase();
@@ -169,6 +148,33 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
             return matchesSearch && matchesWebsite && matchesDate;
         });
     }, [submissions, search, websiteFilter, date]);
+
+    const dynamicColumns = useMemo(() => {
+        const columns = new Set<string>();
+        filteredSubmissions.forEach((sub) => {
+            if (sub.data) {
+                Object.keys(sub.data).forEach((key) => {
+                    // Only include if the key has a value in at least one filtered submission
+                    const value = sub.data[key];
+                    const hasValue = value !== undefined && value !== null && value !== "";
+                    
+                    if (hasValue) {
+                        // Exclude keys that are already handled by primary columns and internal IDs
+                        const excludeList = [
+                            "name", "fullName", "email", "message", 
+                            "website_id", "Website_id", "websiteId", 
+                            "form_id", "Form_id", "formId"
+                        ];
+                        
+                        if (!excludeList.includes(key)) {
+                            columns.add(key);
+                        }
+                    }
+                });
+            }
+        });
+        return Array.from(columns);
+    }, [filteredSubmissions]);
 
     const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage) || 1;
     const paginatedData = filteredSubmissions.slice(
