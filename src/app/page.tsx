@@ -1,3 +1,4 @@
+// Deployment trigger for staging
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { StatCard } from "@/components/dashboard/StatCard";
