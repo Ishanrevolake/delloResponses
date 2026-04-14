@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { Search, Download, Calendar as CalendarIcon, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { Search, Download, Calendar as CalendarIcon, ChevronLeft, ChevronRight, RefreshCw, Mail, Send } from "lucide-react";
 import * as XLSX from "xlsx";
 
 import { Submission, Website } from "@/lib/types";
@@ -31,6 +31,16 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface ResponsesTableProps {
     submissions: Submission[];
@@ -44,7 +54,34 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
     const [websiteFilter, setWebsiteFilter] = useState<string>("all");
     const [date, setDate] = useState<Date | undefined>();
     const [currentPage, setCurrentPage] = useState(1);
+    const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+    const [isMailDialogOpen, setIsMailDialogOpen] = useState(false);
+    const [mailSubject, setMailSubject] = useState("");
+    const [mailMessage, setMailMessage] = useState("");
+    const [isSending, setIsSending] = useState(false);
     const itemsPerPage = 10;
+
+    const handleOpenMailDialog = (submission: Submission) => {
+        setSelectedSubmission(submission);
+        setMailSubject(`Regarding your submission on ${websiteMap[submission.websiteId]?.name || 'our website'}`);
+        setMailMessage(`Hi ${submission.name},\n\n`);
+        setIsMailDialogOpen(true);
+    };
+
+    const handleSendMail = () => {
+        setIsSending(true);
+        // Placeholder for EmailJS integration
+        console.log("Sending mail to:", selectedSubmission?.email);
+        console.log("Subject:", mailSubject);
+        console.log("Message:", mailMessage);
+        
+        setTimeout(() => {
+            setIsSending(false);
+            setIsMailDialogOpen(false);
+            // In a real app, we would show a success toast here
+            alert(`Mail sent to ${selectedSubmission?.email} (Simulation)`);
+        }, 1000);
+    };
 
     const handleRefresh = () => {
         setIsRefreshing(true);
@@ -261,7 +298,8 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
                             ))}
                             <TableHead className="min-w-[200px]">Message</TableHead>
                             <TableHead className="w-[140px]">Website</TableHead>
-                            <TableHead className="w-[140px] text-right">Timestamp</TableHead>
+                            <TableHead className="w-[140px]">Timestamp</TableHead>
+                            <TableHead className="w-[100px] text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -294,12 +332,88 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
                                     <TableCell className="text-right text-muted-foreground whitespace-nowrap text-xs font-medium uppercase">
                                         {format(new Date(sub.timestamp), "MMM dd, yyyy")}
                                     </TableCell>
+                                    <TableCell className="text-right">
+                                        {websiteMap[sub.websiteId]?.name?.toLowerCase().replace(/\s/g, '') === 'graftgym' && (
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                                                onClick={() => handleOpenMailDialog(sub)}
+                                                title="Send Mail"
+                                            >
+                                                <Mail className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </TableCell>
                                 </TableRow>
                             ))
                         )}
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Mail Dialog */}
+            <Dialog open={isMailDialogOpen} onOpenChange={setIsMailDialogOpen}>
+                <DialogContent className="sm:max-w-[500px] bg-card border-muted-foreground/20">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Mail className="h-5 w-5 text-primary" />
+                            Send Email Response
+                        </DialogTitle>
+                        <DialogDescription>
+                            Send a direct email to {selectedSubmission?.name}. This currently logs to console as a placeholder.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="recipient">Recipient</Label>
+                            <Input 
+                                id="recipient" 
+                                value={selectedSubmission?.email || ""} 
+                                disabled 
+                                className="bg-muted/50"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="subject">Subject</Label>
+                            <Input 
+                                id="subject" 
+                                value={mailSubject} 
+                                onChange={(e) => setMailSubject(e.target.value)}
+                                placeholder="Enter email subject"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="message">Message</Label>
+                            <Textarea 
+                                id="message" 
+                                value={mailMessage} 
+                                onChange={(e) => setMailMessage(e.target.value)}
+                                placeholder="Type your message here..."
+                                className="min-h-[150px]"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsMailDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleSendMail} disabled={isSending}>
+                            {isSending ? (
+                                <>
+                                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                                    Sending...
+                                </>
+                            ) : (
+                                <>
+                                    <Send className="mr-2 h-4 w-4" />
+                                    Send Mail
+                                </>
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Pagination */}
             <div className="p-4 border-t border-muted-foreground/20 flex items-center justify-between bg-card">
