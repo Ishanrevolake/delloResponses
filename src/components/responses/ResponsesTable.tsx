@@ -156,14 +156,15 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
                 Object.keys(sub.data).forEach((key) => {
                     // Only include if the key has a value in at least one filtered submission
                     const value = sub.data[key];
-                    const hasValue = value !== undefined && value !== null && value !== "";
+                    const hasValue = value !== undefined && value !== null && String(value).trim() !== "" && String(value).trim().toLowerCase() !== "null";
                     
                     if (hasValue) {
                         // Exclude keys that are already handled by primary columns and internal IDs
                         const excludeList = [
-                            "name", "fullName", "email", "message", 
-                            "website_id", "Website_id", "websiteId", 
-                            "form_id", "Form_id", "formId"
+                            "name", "fullName", "full_name", "email", "message", 
+                            "id", "ID", "website_id", "Website_id", "websiteId", 
+                            "form_id", "Form_id", "formId", "domain", "created_at", "updated_at",
+                            "website_name", "website", "Website"
                         ];
                         
                         if (!excludeList.includes(key)) {
@@ -303,7 +304,7 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
                                 <TableHead key={col} className="min-w-[150px]">{formatHeader(col)}</TableHead>
                             ))}
                             <TableHead className="min-w-[200px]">Message</TableHead>
-                            <TableHead className="w-[140px]">Website</TableHead>
+                            {websiteFilter === "all" && <TableHead className="w-[140px]">Website</TableHead>}
                             <TableHead className="w-[140px]">Timestamp</TableHead>
                             <TableHead className="w-[100px] text-right">Actions</TableHead>
                         </TableRow>
@@ -311,7 +312,7 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
                     <TableBody>
                         {paginatedData.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5 + dynamicColumns.length} className="h-48 text-center text-muted-foreground font-medium">
+                                <TableCell colSpan={6 + dynamicColumns.length + (websiteFilter === "all" ? 1 : 0)} className="h-48 text-center text-muted-foreground font-medium">
                                     No responses found.
                                 </TableCell>
                             </TableRow>
@@ -330,11 +331,13 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
                                             {sub.message}
                                         </div>
                                     </TableCell>
-                                    <TableCell>
-                                        <Badge variant="secondary" className={`border-transparent font-medium ${getBadgeColor(sub.websiteId)}`}>
-                                            {websiteMap[sub.websiteId]?.name || "Unknown"}
-                                        </Badge>
-                                    </TableCell>
+                                    {websiteFilter === "all" && (
+                                        <TableCell>
+                                            <Badge variant="secondary" className={`border-transparent font-medium ${getBadgeColor(sub.websiteId)}`}>
+                                                {websiteMap[sub.websiteId]?.name || "Unknown"}
+                                            </Badge>
+                                        </TableCell>
+                                    )}
                                     <TableCell className="text-right text-muted-foreground whitespace-nowrap text-xs font-medium uppercase">
                                         {format(new Date(sub.timestamp), "MMM dd, yyyy")}
                                     </TableCell>
