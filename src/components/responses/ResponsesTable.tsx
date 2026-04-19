@@ -2,11 +2,10 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
-import { Search, Download, Calendar as CalendarIcon, ChevronLeft, ChevronRight, RefreshCw, Mail, Send } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
+import { Search, Download, Calendar as CalendarIcon, ChevronLeft, ChevronRight, RefreshCw, Mail, Send, CheckCircle2 } from "lucide-react";
 import * as XLSX from "xlsx";
-
-
+import { toast } from "sonner";
 import { Submission, Website } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,6 +58,7 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
     const [isMailDialogOpen, setIsMailDialogOpen] = useState(false);
     const [mailSubject, setMailSubject] = useState("");
     const [mailMessage, setMailMessage] = useState("");
+    const [mailAttachment, setMailAttachment] = useState<File | null>(null);
     const [isSending, setIsSending] = useState(false);
     const itemsPerPage = 10;
 
@@ -66,6 +66,7 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
         setSelectedSubmission(submission);
         setMailSubject(`Regarding your submission on ${websiteMap[submission.websiteId]?.name || 'our website'}`);
         setMailMessage(`Hi ${submission.name},\n\n`);
+        setMailAttachment(null);
         setIsMailDialogOpen(true);
     };
 
@@ -75,16 +76,18 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
         setIsSending(true);
         
         try {
+            const formData = new FormData();
+            formData.append('to', selectedSubmission.email);
+            formData.append('subject', mailSubject);
+            formData.append('message', mailMessage);
+            formData.append('submissionId', selectedSubmission.id);
+            if (mailAttachment) {
+                formData.append('attachment', mailAttachment);
+            }
+
             const response = await fetch('/api/send-email', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    to: selectedSubmission.email,
-                    subject: mailSubject,
-                    message: mailMessage,
-                }),
+                body: formData,
             });
 
             const data = await response.json();
@@ -93,13 +96,18 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
                 throw new Error(data.error || 'Failed to send email');
             }
 
+            // Immediately update the local state so the checkmark appears without a hard refresh
+            if (!selectedSubmission.data) selectedSubmission.data = {};
+            selectedSubmission.data.email_sent = true;
+
             setIsSending(false);
             setIsMailDialogOpen(false);
-            alert(`Email sent successfully to ${selectedSubmission.email}`);
-        } catch (error) {
+            setMailAttachment(null);
+            toast.success(`Email sent successfully to ${selectedSubmission.email}`);
+        } catch (error: any) {
             console.error("Mail Error:", error);
             setIsSending(false);
-            alert("Failed to send email. Please check that your SMTP settings are configured in the environment variables.");
+            toast.error(error.message || "Failed to send email. Please check your SMTP configuration.");
         }
     };
 
@@ -362,17 +370,30 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
                                         {format(new Date(sub.timestamp), "MMM dd, yyyy")}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        {websiteMap[sub.websiteId]?.name?.toLowerCase().replace(/\s/g, '') === 'graftgym' && (
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
-                                                onClick={() => handleOpenMailDialog(sub)}
-                                                title="Send Mail"
-                                            >
-                                                <Mail className="h-4 w-4" />
-                                            </Button>
-                                        )}
+                                        <div className="flex items-center justify-end gap-3">
+                                            {websiteMap[sub.websiteId]?.name?.toLowerCase().replace(/\s/g, '') === 'graftgym' && (
+                                                <>
+                                                    {(() => {
+                                                        const days = differenceInDays(new Date(), new Date(sub.timestamp));
+                                                        if (days > 3) {
+                                                            return <span className="text-xs font-semibold text-red-500 whitespace-nowrap hidden sm:inline-block">Expired ({days} days)</span>;
+                                                        } else if (days > 0) {
+                                                            return <span className="text-xs font-medium text-muted-foreground whitespace-nowrap hidden sm:inline-block">{days} {days === 1 ? 'day' : 'days'} ago</span>;
+                                                        }
+                                                        return <span className="text-xs font-medium text-muted-foreground whitespace-nowrap hidden sm:inline-block">Today</span>;
+                                                    })()}
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        className={`h-8 w-8 ${sub.data?.email_sent ? 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10' : 'text-primary hover:text-primary hover:bg-primary/10'}`}
+                                                        onClick={() => handleOpenMailDialog(sub)}
+                                                        title={sub.data?.email_sent ? "Send Mail Again" : "Send Mail"}
+                                                    >
+                                                        {sub.data?.email_sent ? <CheckCircle2 className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
+                                                    </Button>
+                                                </>
+                                            )}
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -420,6 +441,15 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
                                 onChange={(e) => setMailMessage(e.target.value)}
                                 placeholder="Type your message here..."
                                 className="min-h-[150px]"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="attachment">Attachment (max 5MB)</Label>
+                            <Input 
+                                id="attachment" 
+                                type="file" 
+                                onChange={(e) => setMailAttachment(e.target.files?.[0] || null)}
+                                className="cursor-pointer file:text-foreground file:font-semibold"
                             />
                         </div>
                     </div>
