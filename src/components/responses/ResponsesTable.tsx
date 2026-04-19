@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { Search, Download, Calendar as CalendarIcon, ChevronLeft, ChevronRight, RefreshCw, Mail, Send } from "lucide-react";
 import * as XLSX from "xlsx";
-import emailjs from '@emailjs/browser';
+
 
 import { Submission, Website } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
@@ -72,39 +72,34 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
     const handleSendMail = async () => {
         if (!selectedSubmission) return;
 
-        const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
-        const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
-        const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
-
-        if (!serviceId || !templateId || !publicKey) {
-            alert("EmailJS configuration is missing. Please set the environment variables.");
-            return;
-        }
-
         setIsSending(true);
         
         try {
-            const templateParams = {
-                to_name: selectedSubmission.name,
-                to_email: selectedSubmission.email,
-                subject: mailSubject,
-                message: mailMessage,
-            };
+            const response = await fetch('/api/send-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    to: selectedSubmission.email,
+                    subject: mailSubject,
+                    message: mailMessage,
+                }),
+            });
 
-            await emailjs.send(
-                serviceId,
-                templateId,
-                templateParams,
-                publicKey
-            );
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to send email');
+            }
 
             setIsSending(false);
             setIsMailDialogOpen(false);
             alert(`Email sent successfully to ${selectedSubmission.email}`);
         } catch (error) {
-            console.error("EmailJS Error:", error);
+            console.error("Mail Error:", error);
             setIsSending(false);
-            alert("Failed to send email. Please check the console for details.");
+            alert("Failed to send email. Please check that your SMTP settings are configured in the environment variables.");
         }
     };
 
@@ -395,7 +390,7 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
                             Send Email Response
                         </DialogTitle>
                         <DialogDescription>
-                            Send a direct email to {selectedSubmission?.name}. This currently logs to console as a placeholder.
+                            Send a direct email to {selectedSubmission?.name} securely using your private GraftGym inbox.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
