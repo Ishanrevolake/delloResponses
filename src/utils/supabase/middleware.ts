@@ -3,6 +3,32 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 // Use this in Middleware
 export async function updateSession(request: NextRequest) {
+    const pathname = request.nextUrl.pathname
+    const isAuthRoute = pathname.startsWith('/login')
+    const isApiRoute = pathname.startsWith('/api/')
+    const isStaticAsset =
+        pathname.startsWith('/_next') ||
+        pathname === '/favicon.ico' ||
+        /\.[^/]+$/.test(pathname)
+
+    if (isApiRoute || isStaticAsset) {
+        return NextResponse.next({ request })
+    }
+
+    const hasSupabaseAuthCookie = request.cookies
+        .getAll()
+        .some(({ name }) => name.startsWith('sb-') && name.includes('auth-token'))
+
+    if (!hasSupabaseAuthCookie && !isAuthRoute) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
+        return NextResponse.redirect(url)
+    }
+
+    if (!hasSupabaseAuthCookie && isAuthRoute) {
+        return NextResponse.next({ request })
+    }
+
     let supabaseResponse = NextResponse.next({
         request,
     })
@@ -16,7 +42,7 @@ export async function updateSession(request: NextRequest) {
                     return request.cookies.getAll()
                 },
                 setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+                    cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
                     supabaseResponse = NextResponse.next({
                         request,
                     })
@@ -36,15 +62,8 @@ export async function updateSession(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
-    const isAuthRoute = request.nextUrl.pathname.startsWith('/login')
-
-    // Protect all routes except /login, /api/responses, and Next.js internal assets
-    if (
-        !user &&
-        !isAuthRoute &&
-        !request.nextUrl.pathname.startsWith('/api/') &&
-        !request.nextUrl.pathname.startsWith('/_next')
-    ) {
+    // Protect dashboard routes.
+    if (!user && !isAuthRoute) {
         // Force authentication for the dashboard views by redirecting to login
         const url = request.nextUrl.clone()
         url.pathname = '/login'

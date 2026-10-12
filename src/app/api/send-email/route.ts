@@ -2,6 +2,29 @@ import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { createClient } from '@/utils/supabase/server';
 
+type MailError = Error & {
+    code?: string;
+    responseCode?: number;
+};
+
+function getPublicMailError(error: MailError) {
+    if (error.code === 'EAUTH' || error.responseCode === 535) {
+        return {
+            status: 503,
+            message: 'The Graft Gym mailbox login was rejected. Update SMTP_USER and SMTP_PASS, then try again.',
+        };
+    }
+
+    if (['ECONNECTION', 'ESOCKET', 'ETIMEDOUT'].includes(error.code || '')) {
+        return {
+            status: 503,
+            message: 'Could not connect to the Graft Gym mail server. Check SMTP_HOST, SMTP_PORT, and SMTP_SECURE.',
+        };
+    }
+
+    return { status: 500, message: 'Failed to send email' };
+}
+
 export async function POST(req: Request) {
     try {
         const formData = await req.formData();
@@ -17,7 +40,7 @@ export async function POST(req: Request) {
         }
 
         // Validate environment variables
-        const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
+        const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_SECURE } = process.env;
 
         if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
             console.error("Missing SMTP credentials in environment variables.");
@@ -38,14 +61,22 @@ export async function POST(req: Request) {
         }
 
         // Create the Nodemailer transport
+        const smtpPort = Number(SMTP_PORT);
+        if (!Number.isInteger(smtpPort) || smtpPort < 1 || smtpPort > 65535) {
+            return NextResponse.json({ error: 'SMTP_PORT is invalid' }, { status: 500 });
+        }
+
         const transporter = nodemailer.createTransport({
-            host: SMTP_HOST,
-            port: Number(SMTP_PORT),
-            secure: Number(SMTP_PORT) === 465, // True for 465, false for other ports (like 587)
+            host: SMTP_HOST.trim(),
+            port: smtpPort,
+            secure: SMTP_SECURE ? SMTP_SECURE === 'true' : smtpPort === 465,
             auth: {
-                user: SMTP_USER,
-                pass: SMTP_PASS,
+                user: SMTP_USER.trim(),
+                pass: SMTP_PASS.trim(),
             },
+            connectionTimeout: 15_000,
+            greetingTimeout: 15_000,
+            socketTimeout: 30_000,
         });
 
         // Send the email
@@ -86,6 +117,7 @@ export async function POST(req: Request) {
 
     } catch (error) {
         console.error("Error sending email:", error);
-        return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
+        const publicError = getPublicMailError(error as MailError);
+        return NextResponse.json({ error: publicError.message }, { status: publicError.status });
     }
 }
