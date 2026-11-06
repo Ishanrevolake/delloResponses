@@ -33,7 +33,7 @@ The code was implemented and tested with mocked SMTP/provider/database boundarie
 
 ### Vercel hosting
 
-`vercel.json` calls `GET /api/cron/automation` every five minutes. Vercel passes the `CRON_SECRET` environment variable as a bearer header. The schedule is UTC; UK local report timing is checked inside the application. Use a hosting plan that supports this frequency and a sufficient function timeout. If your plan only supports daily jobs, use another scheduler instead; daily polling cannot reliably provide Friday 09:00 UK delivery.
+Automatic scheduling is currently disabled: `vercel.json` declares no cron jobs. This keeps deployments compatible with Vercel Hobby and leaves automation paused. The authenticated `GET /api/cron/automation` endpoint remains available for a separately configured scheduler. If automation is re-enabled later, a five-minute Vercel schedule requires a plan that supports that frequency, or an external scheduler. Daily Hobby polling cannot reliably provide Friday 09:00 UK delivery.
 
 ### Supabase Cron or another hosted scheduler
 
