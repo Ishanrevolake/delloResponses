@@ -1,4 +1,5 @@
 // Deployment trigger for staging
+import { AIInsightsCard } from "@/components/ai/AIInsightsCard";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -69,13 +70,15 @@ export default async function Home() {
           trend="neutral"
         />
         <StatCard
-          title="Avg. Conversion Rate"
+          title="Active Website Rate"
           value={conversionRate}
-          description="Based on status"
+          description="Active websites / total websites"
           icon={Percent}
           trend="neutral"
         />
       </div>
+
+      <AIInsightsCard websites={websites} />
 
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
         <SubmissionsOverTime data={lineChartData} />

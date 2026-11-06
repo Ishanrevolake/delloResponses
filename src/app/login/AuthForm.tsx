@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { unstable_rethrow } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { login, signup } from "./actions";
 import { PasswordInput } from "@/components/ui/PasswordInput";
@@ -32,8 +33,10 @@ export function AuthForm({ message }: { message?: string }) {
             } else {
                 await signup(formData);
             }
-        } catch (err: any) {
-            setError(err.message || "An unexpected error occurred.");
+        } catch (err: unknown) {
+            // Redirects are framework control flow, not authentication errors.
+            unstable_rethrow(err);
+            setError(err instanceof Error ? err.message : "An unexpected error occurred.");
             setIsLoading(false);
         }
     };

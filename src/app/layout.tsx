@@ -20,7 +20,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} min-h-screen bg-background antialiased selection:bg-primary selection:text-primary-foreground`}>
+      {/* Browser extensions may add attributes to body before React hydrates. */}
+      <body suppressHydrationWarning className={`${inter.className} min-h-screen bg-background antialiased selection:bg-primary selection:text-primary-foreground`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

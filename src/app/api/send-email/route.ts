@@ -1,6 +1,9 @@
+import { SENDER, emailAddress } from "@/lib/automation-model";
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { createClient } from '@/utils/supabase/server';
+import { requireUser, requireWebsite, apiError } from '@/lib/ai-server';
+import { AppError, uuid } from '@/lib/ai-validation';
 
 type MailError = Error & {
     code?: string;
@@ -27,6 +30,7 @@ function getPublicMailError(error: MailError) {
 
 export async function POST(req: Request) {
     try {
+        const { db, user } = await requireUser();
         const formData = await req.formData();
         
         const to = formData.get('to') as string;
@@ -37,6 +41,19 @@ export async function POST(req: Request) {
 
         if (!to || !subject || !message) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        if (!emailAddress(to)) throw new AppError('A single valid recipient email address is required.', 400);
+
+        // Verify the selected enquiry and recipient before any SMTP action.
+        uuid(submissionId, 'submission ID');
+        const { data: submission, error: submissionError } = await db.from('submissions')
+            .select('id,website_id,data').eq('id', submissionId).maybeSingle();
+        if (submissionError) throw new AppError('Could not verify enquiry access.', 500);
+        if (!submission) throw new AppError('Enquiry not found.', 404);
+        await requireWebsite(db, user.id, submission.website_id);
+        if (typeof submission.data?.email !== 'string' || to.trim().toLowerCase() !== submission.data.email.trim().toLowerCase()) {
+            throw new AppError('Recipient must match the selected enquiry.', 400);
         }
 
         // Validate environment variables
@@ -81,7 +98,8 @@ export async function POST(req: Request) {
 
         // Send the email
         const info = await transporter.sendMail({
-            from: `"Graft Gym" <${SMTP_USER}>`, 
+            from: `"GraftGym" <${SENDER}>`,
+            replyTo: SENDER,
             to: to, // Recipient
             subject: subject,
             text: message, // Plain text body
@@ -116,6 +134,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, messageId: info.messageId }, { status: 200 });
 
     } catch (error) {
+        if (error instanceof AppError) return apiError(error);
         console.error("Error sending email:", error);
         const publicError = getPublicMailError(error as MailError);
         return NextResponse.json({ error: publicError.message }, { status: publicError.status });

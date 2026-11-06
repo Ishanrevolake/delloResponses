@@ -1,0 +1,17 @@
+-- Optional: run separately after deploying the dashboard and enabling Supabase Cron + pg_net.
+-- Do not include actual secrets in committed SQL.
+-- In Supabase Vault, create secrets named:
+--   graftgym_dashboard_url : deployed HTTPS base URL, with no trailing slash
+--   graftgym_cron_secret   : same private value as the app server's CRON_SECRET
+-- Install this job once. To remove it: select cron.unschedule('graftgym-dashboard-automation');
+select cron.schedule(
+ 'graftgym-dashboard-automation',
+ '*/5 * * * *',
+ $$
+ select net.http_get(
+  url := (select decrypted_secret from vault.decrypted_secrets where name='graftgym_dashboard_url') || '/api/cron/automation',
+  headers := jsonb_build_object('Authorization','Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name='graftgym_cron_secret')),
+  timeout_milliseconds := 120000
+ );
+ $$
+);

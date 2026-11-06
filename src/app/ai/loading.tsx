@@ -1,0 +1,1 @@
+export default function Loading() { return <div className="animate-pulse space-y-4" role="status"><div className="h-10 w-56 rounded bg-muted" /><div className="h-64 rounded-xl bg-muted" /><span className="sr-only">Loading AI workspace</span></div>; }

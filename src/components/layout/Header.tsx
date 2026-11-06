@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Bell, Search, User } from "lucide-react";
 import { LogoutButton } from "./LogoutButton";
 import { Input } from "@/components/ui/input";
@@ -35,6 +36,7 @@ export default function Header() {
                 </form>
 
                 <div className="ml-auto flex items-center gap-2">
+                    <Button variant="outline" size="sm" asChild><Link href="/ai">AI Workspace</Link></Button>
                     <LogoutButton />
                 </div>
             </div>

@@ -6,7 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test:ai": "node --test tests/ai.test.cjs tests/ai-provider.test.cjs",
+    "automation:local": "node scripts/automation-runner.mjs",
+    "test:automation": "node --test tests/automation.test.cjs",
+    "test:ai:live": "node scripts/test-ai-live.cjs",
+    "test:client-api": "node --test tests/client-api.test.cjs"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

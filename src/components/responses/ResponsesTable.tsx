@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { AIEnquiry } from "@/components/ai/AIEnquiry";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { format, differenceInDays } from "date-fns";
@@ -371,12 +373,13 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-3">
+                                            <Button variant="ghost" size="sm" asChild><Link href={`/ai?website=${sub.websiteId}&submission=${sub.id}`}>AI</Link></Button>
                                             {websiteMap[sub.websiteId]?.name?.toLowerCase().replace(/\s/g, '') === 'graftgym' && (
                                                 <>
                                                     {(() => {
                                                         const days = differenceInDays(new Date(), new Date(sub.timestamp));
                                                         if (days > 3) {
-                                                            return <span className="text-xs font-semibold text-red-500 whitespace-nowrap hidden sm:inline-block">Expired ({days} days)</span>;
+                                                            return <span className="text-xs font-semibold text-red-500 whitespace-nowrap hidden sm:inline-block">Enquiry: {days} days old</span>;
                                                         } else if (days > 0) {
                                                             return <span className="text-xs font-medium text-muted-foreground whitespace-nowrap hidden sm:inline-block">{days} {days === 1 ? 'day' : 'days'} ago</span>;
                                                         }
@@ -404,7 +407,7 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
 
             {/* Mail Dialog */}
             <Dialog open={isMailDialogOpen} onOpenChange={setIsMailDialogOpen}>
-                <DialogContent className="sm:max-w-[500px] bg-card border-muted-foreground/20">
+                <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-card border-muted-foreground/20">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Mail className="h-5 w-5 text-primary" />
@@ -414,6 +417,7 @@ export function ResponsesTable({ submissions, websites }: ResponsesTableProps) {
                             Send a direct email to {selectedSubmission?.name} securely using your private GraftGym inbox.
                         </DialogDescription>
                     </DialogHeader>
+                    {selectedSubmission && <AIEnquiry key={selectedSubmission.id} websiteId={selectedSubmission.websiteId} submissionId={selectedSubmission.id} onDraft={(subject, body) => { setMailSubject(subject); setMailMessage(body); }} />}
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
                             <Label htmlFor="recipient">Recipient</Label>

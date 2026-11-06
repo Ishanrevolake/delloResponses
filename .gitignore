@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+!.env.example
+
+# Private client handoff bundles contain credentials.
+/private-handoff/
+
+# Local development server output.
+/dev-server*.log

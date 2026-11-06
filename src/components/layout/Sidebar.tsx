@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BetaNavigation } from "@/components/beta/BetaNavigation";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import logo from "@/Images/logotypo.png";
@@ -10,6 +11,8 @@ import {
     Globe,
     BarChart3,
     Settings,
+    Sparkles,
+    // Mail, // Used by the temporarily hidden Automation navigation item.
     Menu
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +22,9 @@ const navItems = [
     { name: "Responses", href: "/responses", icon: MessageSquare },
     { name: "Websites", href: "/websites", icon: Globe },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
+    { name: "AI Workspace", href: "/ai", icon: Sparkles },
+    // Temporarily hidden. Uncomment this item to restore the Automation menu.
+    // { name: "Automation", href: "/automation", icon: Mail },
 ];
 
 export default function Sidebar() {
@@ -59,6 +65,7 @@ export default function Sidebar() {
                         </Link>
                     );
                 })}
+                <BetaNavigation />
             </nav>
         </aside>
     );

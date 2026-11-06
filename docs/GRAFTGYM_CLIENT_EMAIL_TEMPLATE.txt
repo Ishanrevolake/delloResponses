@@ -1,0 +1,19 @@
+﻿Subject: GraftGym dashboard API integration details
+
+Hi,
+
+Please find the private GraftGym API integration bundle attached/shared securely.
+
+Your API base URL is:
+https://dash.dellodigital.com/api/v1
+
+The bundle contains your read-only API key, a step-by-step guide, ready-made Postman requests and a backend example. Access is restricted to GraftGym enquiries, recorded memberships and analytics. The initial key expires on 6 November 2027.
+
+Please give the bundle to your dashboard developer. The key must be used from a private backend/serverless function, not from public browser code.
+
+Activation status: production deployment is still pending. Please wait for my confirmation that the API is live before testing. Once activated, please confirm that the three data endpoints return HTTP 200 and the missing-key check returns HTTP 401.
+
+Please keep the bundle private. Contact me if your developer needs help connecting it.
+
+Best regards,
+Dello Digital
